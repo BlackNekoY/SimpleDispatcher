@@ -9,7 +9,7 @@ import com.rdc.blackwhite.dispatcher.util.AssertUtil;
 public class PendingPost {
 
     Dispatchable dispatchable;
-    Object group;
+    String group;
     PendingPost next;
 
     private static PendingPost sPool;
@@ -18,7 +18,7 @@ public class PendingPost {
 
     private PendingPost() {}
 
-    static PendingPost obtainPendingPost(Object group,Dispatchable dispatchable) {
+    static PendingPost obtainPendingPost(String group,Dispatchable dispatchable) {
         AssertUtil.checkNotNull(group);
         AssertUtil.checkNotNull(dispatchable);
 

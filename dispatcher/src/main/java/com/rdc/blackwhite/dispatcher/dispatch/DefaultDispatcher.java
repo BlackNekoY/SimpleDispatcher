@@ -33,7 +33,7 @@ public class DefaultDispatcher implements Dispatcher {
      * key:Subscriber的hashcode
      * value:该Subscriber所在的所有分组
      */
-    private Map<Integer, CopyOnWriteArraySet<Object>> mGroupsBySubscriber = new ConcurrentHashMap<>(10);
+    private Map<Integer, CopyOnWriteArraySet<String>> mGroupsBySubscriber = new ConcurrentHashMap<>(10);
 
     /**
      * 使用ThreadLocal来确保线程唯一
@@ -47,6 +47,7 @@ public class DefaultDispatcher implements Dispatcher {
 
     @Override
     public void registerSubscriber(String group, Subscriber subscriber) {
+        AssertUtil.checkNotNull(subscriber);
         if (TextUtils.isEmpty(group)) {
             group = DEFAULT_GROUP_NAME;
         }
@@ -63,14 +64,16 @@ public class DefaultDispatcher implements Dispatcher {
         if (acceptList.size() == 0) {
             return;
         }
-        CopyOnWriteArraySet<Object> groups = mGroupsBySubscriber.get(subscriber.hashCode());
+        CopyOnWriteArraySet<String> groups = mGroupsBySubscriber.get(subscriber.hashCode());
 
+        //取出每一个 Class 和 group，合成SubscriberKey，去remove
         for (Class<? extends Dispatchable> acceptClass : acceptList) {
             if (groups != null) {
-                for (Object group : groups) {
+                for (String group : groups) {
                     removeSubscriber(group, acceptClass, subscriber);
                 }
             } else {
+                //一般来讲取出的groups不会为null，因为register的时候有判断，没有传group就会使用DEFAULT_GROUP_NAME
                 removeSubscriber(DEFAULT_GROUP_NAME, acceptClass, subscriber);
             }
         }
@@ -82,7 +85,7 @@ public class DefaultDispatcher implements Dispatcher {
     }
 
     @Override
-    public void dispatch(Object group, Dispatchable dispatchable) {
+    public void dispatch(String group, Dispatchable dispatchable) {
         AssertUtil.checkNotNull(group);
         AssertUtil.checkNotNull(dispatchable);
 
@@ -104,7 +107,7 @@ public class DefaultDispatcher implements Dispatcher {
             state.isPosting = true;
             try {
                 while (!queue.isEmpty()) {
-                    PendingPost post = queue.remove(0);
+                    PendingPost  post = queue.remove(0);
                     dispatchSingle(post);
                     post.recycle();
                 }
@@ -176,9 +179,7 @@ public class DefaultDispatcher implements Dispatcher {
      * -> Subscriber->Subscriber->...->Subscriber
      * class
      */
-    private void insertSubscriber(Object group, Subscriber.Wrapper wrapper) {
-        AssertUtil.checkNotNull(group);
-        AssertUtil.checkNotNull(wrapper);
+    private void insertSubscriber(String group, Subscriber.Wrapper wrapper) {
 
         Subscriber handler = wrapper.get();
         List<Class<? extends Dispatchable>> acceptList = new ArrayList<>(2);
@@ -204,10 +205,10 @@ public class DefaultDispatcher implements Dispatcher {
     /**
      * Subscriber.hashcode(): group->group->...->group
      */
-    private void insertGroup(Object group, Subscriber handler) {
+    private void insertGroup(String group, Subscriber handler) {
         int key = handler.hashCode();
 
-        CopyOnWriteArraySet<Object> groups = mGroupsBySubscriber.get(key);
+        CopyOnWriteArraySet<String> groups = mGroupsBySubscriber.get(key);
         if (groups == null) {
             groups = new CopyOnWriteArraySet<>();
             mGroupsBySubscriber.put(key, groups);
@@ -215,8 +216,7 @@ public class DefaultDispatcher implements Dispatcher {
         groups.add(group);
     }
 
-    private void removeSubscriber(Object group, Class<? extends Dispatchable> acceptClass, Subscriber subscriber) {
-        AssertUtil.checkNotNull(subscriber);
+    private void removeSubscriber(String group, Class<? extends Dispatchable> acceptClass, Subscriber subscriber) {
 
         SubscriberKey key = makeKey(group, acceptClass);
         CopyOnWriteArraySet<Subscriber.Wrapper> set = mSubscriberMap.get(key);
@@ -228,7 +228,7 @@ public class DefaultDispatcher implements Dispatcher {
         }
     }
 
-    private SubscriberKey makeKey(Object group, Class<? extends Dispatchable> acceptClass) {
+    private SubscriberKey makeKey(String group, Class<? extends Dispatchable> acceptClass) {
         AssertUtil.checkNotNull(group);
         AssertUtil.checkNotNull(acceptClass);
 
@@ -236,10 +236,10 @@ public class DefaultDispatcher implements Dispatcher {
     }
 
     private static class SubscriberKey {
-        public Object group;
+        public String group;
         public Class<? extends Dispatchable> subscriberClass;
 
-        public SubscriberKey(Object group, Class<? extends Dispatchable> scbscriberClass) {
+        public SubscriberKey(String group, Class<? extends Dispatchable> scbscriberClass) {
             this.group = group;
             this.subscriberClass = scbscriberClass;
         }
@@ -263,7 +263,7 @@ public class DefaultDispatcher implements Dispatcher {
     }
 
     /**
-     * 维护分发的队列，和状态
+     * 每条线程对应的分发队列和状态，通过ThreadLocal保证线程唯一
      */
     final static class PostingThreadState {
         final List<PendingPost> eventQueue = new ArrayList<>();

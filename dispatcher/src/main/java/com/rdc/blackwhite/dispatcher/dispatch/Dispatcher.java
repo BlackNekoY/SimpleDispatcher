@@ -14,6 +14,6 @@ public interface Dispatcher {
 
     void dispatch(Dispatchable dispatchable);
 
-    void dispatch(Object group,Dispatchable dispatchable);
+    void dispatch(String group,Dispatchable dispatchable);
 
 }
