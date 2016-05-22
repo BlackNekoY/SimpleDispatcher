@@ -16,4 +16,11 @@ public interface Dispatcher {
 
     void dispatch(String group,Dispatchable dispatchable);
 
+    /**
+     * 可以分发的事件接口
+     */
+    interface Event extends Dispatchable {
+
+    }
+
 }

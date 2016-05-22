@@ -5,6 +5,8 @@ import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 
 /**
@@ -45,6 +47,36 @@ public interface Subscriber {
         }
 
         protected abstract void onDispatch(Dispatchable dispatchable);
+    }
+
+    /**
+     * 只接收一个事件的接收者，在主线程中执行
+     * @param <EVENT>
+     */
+    abstract class SingleEventSubscriber<EVENT extends Dispatchable> extends LooperSubscriber {
+
+        private Class mClazz;
+
+        public SingleEventSubscriber() {
+            super(Looper.getMainLooper());
+            //通过这种方法可以获取当前泛型的class对象
+            Type genType = this.getClass().getGenericSuperclass();
+            Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
+            mClazz = (Class) params[params.length - 1];
+        }
+
+        @Override
+        public final void accept(List<Class<? extends Dispatchable>> acceptClass) {
+            acceptClass.add(mClazz);
+        }
+
+        @Override
+        protected final void onDispatch(Dispatchable dispatchable) {
+            //这里将Dispatchable转换成接收的事件类型
+            onDispatch2((EVENT) dispatchable);
+        }
+
+        abstract void onDispatch2(EVENT event);
     }
 
 

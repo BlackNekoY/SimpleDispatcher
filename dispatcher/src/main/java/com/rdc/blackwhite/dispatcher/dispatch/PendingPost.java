@@ -1,5 +1,7 @@
 package com.rdc.blackwhite.dispatcher.dispatch;
 
+import android.util.Log;
+
 import com.rdc.blackwhite.dispatcher.util.AssertUtil;
 
 /**
@@ -8,6 +10,7 @@ import com.rdc.blackwhite.dispatcher.util.AssertUtil;
  */
 public class PendingPost {
 
+    private static final String TAG = "PendingPost";
     Dispatchable dispatchable;
     String group;
     PendingPost next;
@@ -44,6 +47,8 @@ public class PendingPost {
             next = sPool;
             sPool = this;
             sPoolSize++;
+        } else {
+            Log.d(TAG, "poolsize is max_size,free it!");
         }
     }
 
