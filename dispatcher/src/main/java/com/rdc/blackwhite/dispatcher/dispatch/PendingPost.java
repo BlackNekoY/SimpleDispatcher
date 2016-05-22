@@ -16,18 +16,19 @@ public class PendingPost {
     private final static int MAX_SIZE = 30;
     private static int sPoolSize = 0;
 
-    private PendingPost() {}
+    private PendingPost() {
+    }
 
-    static PendingPost obtainPendingPost(String group,Dispatchable dispatchable) {
+    static PendingPost obtainPendingPost(String group, Dispatchable dispatchable) {
         AssertUtil.checkNotNull(group);
         AssertUtil.checkNotNull(dispatchable);
 
         PendingPost p = null;
-        if(sPool != null) {
+        if (sPool != null) {
             p = sPool;
             sPool = p.next;
             sPoolSize--;
-        }else {
+        } else {
             p = new PendingPost();
         }
         p.dispatchable = dispatchable;
@@ -39,9 +40,9 @@ public class PendingPost {
         dispatchable = null;
         group = null;
 
-        if(sPoolSize < MAX_SIZE) {
+        if (sPoolSize < MAX_SIZE) {
             next = sPool;
-            sPool.next = this;
+            sPool = this;
             sPoolSize++;
         }
     }

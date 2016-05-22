@@ -21,6 +21,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 public class DefaultDispatcher implements Dispatcher {
 
     private static final String TAG = "DefaultDispatcher";
+
+    private PendingPostHandler mPendingPostHandler;
+
     /**
      * 用于保存各个分发处理器
      * key：使用makekey获取
@@ -34,6 +37,17 @@ public class DefaultDispatcher implements Dispatcher {
      * value:该Subscriber所在的所有分组
      */
     private Map<Integer, CopyOnWriteArraySet<String>> mGroupsBySubscriber = new ConcurrentHashMap<>(10);
+
+    DefaultDispatcher(Looper looper) {
+        mPendingPostHandler = new PendingPostHandler(looper);
+        mPendingPostHandler.addPosterRunner(new PendingPostHandler.PosterRunner() {
+            @Override
+            public void run(PendingPost pendingPost) {
+                doDispatch(pendingPost);
+            }
+        });
+        mPendingPostHandler.start();
+    }
 
     /**
      * 使用ThreadLocal来确保线程唯一
@@ -86,9 +100,13 @@ public class DefaultDispatcher implements Dispatcher {
 
     @Override
     public void dispatch(String group, Dispatchable dispatchable) {
-        AssertUtil.checkNotNull(group);
         AssertUtil.checkNotNull(dispatchable);
 
+        if(TextUtils.isEmpty(group)) {
+            group = DEFAULT_GROUP_NAME;
+        }
+
+        //取出当前线程的分发队列
         PostingThreadState state = mCurrentPostingState.get();
         List<PendingPost> queue = state.eventQueue;
 
@@ -107,9 +125,8 @@ public class DefaultDispatcher implements Dispatcher {
             state.isPosting = true;
             try {
                 while (!queue.isEmpty()) {
-                    PendingPost  post = queue.remove(0);
+                    PendingPost post = queue.remove(0);
                     dispatchSingle(post);
-                    post.recycle();
                 }
             } finally {
                 state.isPosting = false;
@@ -125,8 +142,9 @@ public class DefaultDispatcher implements Dispatcher {
 
         if (Looper.myLooper() == Looper.getMainLooper()) {
             //如果当前分发线程是主线程，则放到dispatch线程执行，因为主线程不能做耗时操作
+            mPendingPostHandler.post(pendingPost);
         } else {
-            //如果不是在主线程分发，不如直接做了吧
+            //如果不是在主线程分发，直接做了吧
             doDispatch(pendingPost);
         }
     }
@@ -142,6 +160,8 @@ public class DefaultDispatcher implements Dispatcher {
         if (subscribers != null) {
             isHit = true;
             notifySubscribers(subscribers, key, pendingPost);
+            //回收该PendingPost
+            pendingPost.recycle();
         }
         if (!isHit) {
             Log.d(TAG, "didn't hit!");
@@ -249,10 +269,10 @@ public class DefaultDispatcher implements Dispatcher {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            SubscriberKey that = (SubscriberKey) o;
+            SubscriberKey key = (SubscriberKey) o;
 
-            if (group != null ? !group.equals(that.group) : that.group != null) return false;
-            return subscriberClass != null ? subscriberClass.equals(that.subscriberClass) : that.subscriberClass == null;
+            if (group != null ? !group.equals(key.group) : key.group != null) return false;
+            return subscriberClass != null ? subscriberClass.equals(key.subscriberClass) : key.subscriberClass == null;
 
         }
 

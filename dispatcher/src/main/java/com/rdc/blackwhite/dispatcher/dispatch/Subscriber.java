@@ -1,5 +1,8 @@
 package com.rdc.blackwhite.dispatcher.dispatch;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.NonNull;
 
 import java.util.List;
@@ -12,6 +15,38 @@ public interface Subscriber {
     void accept(List<Class<? extends Dispatchable>> acceptClass);
 
     void handleDispatch(Dispatchable dispatchable);
+
+
+    /**
+     * 能够控制响应线程的Subscriber
+     */
+    abstract class LooperSubscriber extends Handler implements Subscriber {
+
+        private final int MSG_HANDLE = 1;
+
+        public LooperSubscriber(Looper looper) {
+            super(looper);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_HANDLE:
+                    Dispatchable dispatchable = (Dispatchable) msg.obj;
+                    onDispatch(dispatchable);
+                    break;
+            }
+        }
+
+        @Override
+        public void handleDispatch(Dispatchable dispatchable) {
+            //Handler.sendMessage的简洁形式
+            Message.obtain(this,MSG_HANDLE,dispatchable).sendToTarget();
+        }
+
+        protected abstract void onDispatch(Dispatchable dispatchable);
+    }
+
 
 
     /**
