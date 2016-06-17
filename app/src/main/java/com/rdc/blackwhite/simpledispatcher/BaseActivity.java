@@ -11,9 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Created by slimxu on 2016/5/22.
- */
 public class BaseActivity extends AppCompatActivity {
 
     protected Map<String,Subscriber> mSubscriberMap = new HashMap<>();
