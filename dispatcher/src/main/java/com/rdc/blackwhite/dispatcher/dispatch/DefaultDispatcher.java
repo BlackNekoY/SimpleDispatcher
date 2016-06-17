@@ -6,6 +6,8 @@ import android.util.Log;
 
 import com.rdc.blackwhite.dispatcher.util.AssertUtil;
 
+import org.w3c.dom.Text;
+
 import java.security.acl.LastOwnerException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,9 +17,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-/**
- * Created by slimxu on 2016/5/20.
- */
 public class DefaultDispatcher implements Dispatcher {
 
     private static final String TAG = "DefaultDispatcher";
@@ -102,7 +101,7 @@ public class DefaultDispatcher implements Dispatcher {
     public void dispatch(String group, Dispatchable dispatchable) {
         AssertUtil.checkNotNull(dispatchable);
 
-        if(TextUtils.isEmpty(group)) {
+        if (TextUtils.isEmpty(group)) {
             group = DEFAULT_GROUP_NAME;
         }
 
@@ -132,7 +131,24 @@ public class DefaultDispatcher implements Dispatcher {
                 state.isPosting = false;
             }
         }
+    }
 
+    @Override
+    public void dispatchDelay(Dispatchable dispatchable, long delayTime) {
+        dispatchDelay(DEFAULT_GROUP_NAME, dispatchable, delayTime);
+    }
+
+    @Override
+    public void dispatchDelay(String group, Dispatchable dispatchable, long delayTime) {
+        AssertUtil.checkNotNull(dispatchable);
+        if(TextUtils.isEmpty(group)) {
+            group = DEFAULT_GROUP_NAME;
+        }
+        if(delayTime < 0) {
+            Log.d(TAG, "delayTime is illegal.");
+            delayTime = 0;
+        }
+        PendingPost pendingPost = PendingPost.obtainPendingPost(group,dispatchable);
     }
 
     /**

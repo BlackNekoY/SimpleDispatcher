@@ -8,9 +8,6 @@ import android.util.Log;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * Created by slimxu on 2016/5/22.
- */
 public abstract class EventHandler<EVENT> {
 
     private static final String TAG = "EventHandler";
@@ -46,7 +43,8 @@ public abstract class EventHandler<EVENT> {
             EVENT event = mQueue.poll();
             if (event != null) {
                 //通知外界分发事件
-                //TODO 如何处理分发时间过长的问题
+                //TODO 如何处理分发时间过长的问题，现在的处理方法是接收的Subscriber都为主线程修改UI的Subscriber，直接通过Handler投递到主线程去执行
+                //所以这里不消耗时间
                 handleEvent(event);
             }
         }

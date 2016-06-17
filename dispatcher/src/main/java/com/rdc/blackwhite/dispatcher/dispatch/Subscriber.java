@@ -10,7 +10,6 @@ import java.lang.reflect.Type;
 import java.util.List;
 
 /**
- * Created by slimxu on 2016/5/20.
  * 监听事件的观察者
  */
 public interface Subscriber {
@@ -47,6 +46,30 @@ public interface Subscriber {
         }
 
         protected abstract void onDispatch(Dispatchable dispatchable);
+    }
+
+    /**
+     * 之所以有这个类是因为有些时候直接使用Subscriber接口继承会比较合适，这样的话就无法使用LooperSubscriber的线程控制的特性
+     * 通过一个包装，将用户自定义的Subscriber传进来，就可以使用LooperSubscriber的特性
+     */
+    class LooperSubscriberWrapper extends LooperSubscriber {
+
+        private Subscriber mSubscriber;
+
+        public LooperSubscriberWrapper(Looper looper,Subscriber subscriber) {
+            super(looper);
+            mSubscriber = subscriber;
+        }
+
+        @Override
+        protected void onDispatch(Dispatchable dispatchable) {
+            mSubscriber.handleDispatch(dispatchable);
+        }
+
+        @Override
+        public void accept(List<Class<? extends Dispatchable>> acceptClass) {
+            mSubscriber.accept(acceptClass);
+        }
     }
 
     /**

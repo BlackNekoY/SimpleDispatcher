@@ -4,7 +4,6 @@ package com.rdc.blackwhite.dispatcher.dispatch;
 import android.os.Looper;
 
 /**
- * Created by slimxu on 2016/5/22.
  * dispatch线程所采用的分发器，传入的是HandlerThread的Looper
  */
 public class PendingPostHandler extends EventHandler<PendingPost>{

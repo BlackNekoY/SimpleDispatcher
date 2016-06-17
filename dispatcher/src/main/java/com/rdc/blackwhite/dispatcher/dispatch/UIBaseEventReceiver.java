@@ -3,8 +3,6 @@ package com.rdc.blackwhite.dispatcher.dispatch;
 import android.support.annotation.NonNull;
 
 /**
- * Created by slimxu on 2016/5/22.
- * <p/>
  * 这里将onEvent的回调分成两个，onSuccess和onError，方便UI层处理事件
  */
 public abstract class UIBaseEventReceiver<T, EVENT extends BaseEvent> extends UIEventReceiver<T, EVENT> {

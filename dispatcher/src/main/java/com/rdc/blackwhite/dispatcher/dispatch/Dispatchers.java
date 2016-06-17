@@ -2,9 +2,6 @@ package com.rdc.blackwhite.dispatcher.dispatch;
 
 import android.os.HandlerThread;
 
-/**
- * Created by slimxu on 2016/5/22.
- */
 public class Dispatchers {
 
     private static final String TAG = "dispatch_thread";
